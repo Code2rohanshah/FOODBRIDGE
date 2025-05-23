@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Bridge - Donation App</title>
+    <!-- Google Maps API -->
+    <!-- Replace the API key below with your own from Google Cloud Console -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhAGIQuLfAteh8MN3e-lbmsF4b8-5dwpg&callback=initGlobalMap" async defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #F5EFE6;
+            color: #333333;
+            overflow-x: hidden;
+        }
+
+        .phone-container {
+            max-width: 375px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            min-height: 667px;
+            background: #F5EFE6;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .header {
+            background: #A8D5BA;
+            padding: 40px 20px 20px;
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px 20px;
+        }
+
+        .user-type-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-type-card:hover {
+            border-color: #A8D5BA;
+            transform: translateY(-2px);
+        }
+
+        .user-type-card.selected {
+            border-color: #6FCF97;
+            background: #f8fffe;
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            background: #F6C453;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 24px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 8px;
+            color: #333333;
+        }
+
+        .card-description {
+            font-size: 14px;
+            text-align: center;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .btn-primary {
+            background: #A8D5BA;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .btn-primary:hover {
+            background: #95c7a8;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #A8D5BA;
+            border: 2px solid #A8D5BA;
+            padding: 12px 25px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #A8D5BA;
+            color: white;
+        }
+
+        .map-container {
+            background: #e8f5e8;
+            height: 300px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #locationMap, #foodMap, #navigationMap {
+            height: 100%;
+            width: 100%;
+        }
+
+        .location-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #6FCF97;
+        }
+
+        .location-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .contributor-type {
+            background: #F6C453;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-available {
+            background: #6FCF97;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        .food-items {
+            font-size: 14px;
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+
+        .pickup-time {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333333;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: #A8D5BA;
+        }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .time-picker {
+            display: flex;
+            gap: 10px;
+        }
+
+        .time-picker select {
+            flex: 1;
+        }
+
+        .success-message {
+            background: #6FCF97;
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        .menu-dropdown {
+            position: absolute;
+            top: 55px;
+            left: 15px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 200px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .menu-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background-color 0.3s ease;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .menu-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .menu-item:first-child {
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+
+        .menu-item-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 999;
+            display: none;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        .confirmation-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .dialog-content {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .custom-marker {
+            background: #F6C453;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            width: 30px;
+            height: 30px;
+            position: relative;
+        }
+
+        .custom-marker::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+    <div class="confirmation-dialog" id="confirmationDialog">
+        <div class="dialog-content">
+            <h3>Confirm Submission</h3>
+            <p>Are you sure you want to submit this donation?</p>
+            <div class="dialog-buttons">
+                <button class="btn-secondary" id="cancelBtn">Cancel</button>
+                <button class="btn-primary" id="confirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+    <div class="phone-container">
+        <div class="screen active" id="userTypeScreen">
+            <div class="header">
+                <button class="menu-btn" onclick="toggleMenu()">⋯</button>
+                <div class="menu-dropdown" id="menuDropdown">
+                    <div class="menu-item" onclick="showScreen('userTypeScreen')"><span class="menu-item-icon">🏠</span><span>Home</span></div>
+                    <div class="menu-item" onclick="showScreen('profileScreen')"><span class="menu-item-icon">👤</span><span>Profile</span></div>
+                    <div class="menu-item" onclick="showScreen('foodMapScreen')"><span class="menu-item-icon">🗺️</span><span>Food Map</span></div>
+                    <div class="menu-item" onclick="showScreen('contributorTypeScreen')"><span class="menu-item-icon">➕</span><span>Add Donation</span></div>
+                    <div class="menu-item" onclick="showAbout()"><span class="menu-item-icon">ℹ️</span><span>About</span></div>
+                    <div class="menu-item" onclick="showSettings()"><span class="menu-item-icon">⚙️</span><span>Settings</span></div>
+                </div>
+                <h1>Food Bridge</h1>
+                <p>Connecting communities through food sharing</p>
+            </div>
+            <div class="content">
+                <div class="user-type-card" onclick="selectUserType('ngo')">
+                    <div class="card-icon">🏢</div>
+                    <div class="card-title">NGO</div>
+                    <div class="card-description">Collect and distribute food to those in need</div>
+                </div>
+                <div class="user-type-card" onclick="selectUserType('contributor')">
+                    <div class="card-icon">🤝</div>
+                    <div class="card-title">Contributor</div>
+                    <div class="card-description">Share surplus food from home or restaurant</div>
+                </div>
+            </div>
+        </div>
+        <div class="screen" id="profileScreen">
+            <div class="header">
+                <button class="menu-btn" onclick="toggleMenu()">⋯</button>
+                <div class="menu-dropdown">
+                    <div class="menu-item" onclick="showScreen('userTypeScreen')"><span class="menu-item-icon">🏠</span><span>Home</span></div>
+                    <div class="menu-item" onclick="showScreen('profileScreen')"><span class="menu-item-icon">👤</span><span>Profile</span></div>
+                    <div class="menu-item" onclick="showScreen('foodMapScreen')"><span class="menu-item-icon">🗺️</span><span>Food Map</span></div>
+                    <div class="menu-item" onclick="showScreen('contributorTypeScreen')"><span class="menu-item-icon">➕</span><span>Add Donation</span></div>
+                    <div class="menu-item" onclick="showAbout()"><span class="menu-item-icon">ℹ️</span><span>About</span></div>
+                    <div class="menu-item" onclick="showSettings()"><span class="menu-item-icon">⚙️</span><span>Settings</span></div>
+                </div>
+                <h1>Profile</h1>
+                <p>Your Food Bridge account</p>
+            </div>
+            <div class="content">
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar">👤</div>
+                        <div class="profile-info">
+                            <h3>John Doe</h3>
+                            <p>Community Contributor</p>
+                            <p style="font-size: 12px; color: #A8D5BA;">Member since Jan 2024</p>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">12</div>
+                            <div class="stat-label">Donations Made</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">148</div>
+                            <div class="stat-label">People Helped</div>
+                        </div>
+                    </div>
+                    <button class="btn-secondary" style="width: 100%; margin: 10px 0;">Edit Profile</button>
+                </div>
+                <div class="profile-card">
+                    <h3 style="margin-bottom: 15px;">Recent Activity</h3>
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px;">
+                        <p style="font-size: 14px; margin-bottom: 5px;"><strong>Donated homemade curry</strong></p>
+                        <p style="font-size: 12px; color: #666;">2 days ago • Served 8 people</p>
+                    </div>
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px;">
+                        <p style="font-size: 14px; margin-bottom: 5px;"><strong>Shared leftover pizza</strong></p>
+                        <p style="font-size: 12px; color: #666;">1 week ago • Served 6 people</p>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="showScreen('userTypeScreen')">Back to Home</button>
+            </div>
+        </div>
+        <div class="screen" id="ngoInfoScreen">
+            <div class="header">
+                <button class="back-btn" onclick="goBack()">←</button>
+                <h1>NGO Dashboard</h1>
+                <p>Real-time food donation locations</p>
+            </div>
+            <div class="content">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h3 style="color: #333333; margin-bottom: 10px;">Welcome, Food Relief Foundation</h3>
+                    <p style="color: #666; font-size: 14px;">View and respond to food donations in your area</p>
+                </div>
+                <button class="btn-primary" onclick="showScreen('foodMapScreen')">View Food Map</button>
+            </div>
+        </div>
+        <div class="screen" id="foodMapScreen">
+            <div class="header">
+                <button class="menu-btn" onclick="toggleMenu()">⋯</button>
+                <div class="menu-dropdown">
+                    <div class="menu-item" onclick="showScreen('userTypeScreen')"><span class="menu-item-icon">🏠</span><span>Home</span></div>
+                    <div class="menu-item" onclick="showScreen('profileScreen')"><span class="menu-item-icon">👤</span><span>Profile</span></div>
+                    <div class="menu-item" onclick="showScreen('foodMapScreen')"><span class="menu-item-icon">🗺️</span><span>Food Map</span></div>
+                    <div class="menu-item" onclick="showScreen('contributorTypeScreen')"><span class="menu-item-icon">➕</span><span>Add Donation</span></div>
+                    <div class="menu-item" onclick="showAbout()"><span class="menu-item-icon">ℹ️</span><span>About</span></div>
+                    <div class="menu-item" onclick="showSettings()"><span class="menu-item-icon">⚙️</span><span>Settings</span></div>
+                </div>
+                <h1>Live Food Map</h1>
+                <p>Available donations near you</p>
+            </div>
+            <div class="content">
+                <div class="form-group">
+                    <label class="form-label">Enter Your Location</label>
+                    <input type="text" class="form-input" id="ngoLocationInput" placeholder="e.g., Indiranagar, Bangalore">
+                    <button class="btn-secondary" style="width: 100%; margin: 10px 0;" onclick="useCurrentNgoLocation()">📍 Use Current GPS Location</button>
+                </div>
+                <div class="map-container">
+                    <div id="foodMap"></div>
+                </div>
+                <div class="location-card" data-id="1">
+                    <div class="location-header">
+                        <span class="contributor-type">Restaurant</span>
+                        <span class="status-available">Available</span>
+                    </div>
+                    <div class="food-items"><strong>Food:</strong> 15 portions rice, dal, vegetables</div>
+                    <div class="pickup-time"><strong>Pickup:</strong> 2:00 PM - 4:00 PM today</div>
+                    <button class="btn-secondary" onclick="selectDonationLocation(1)">Select for Route</button>
+                </div>
+                <div class="location-card" data-id="2">
+                    <div class="location-header">
+                        <span class="contributor-type" style="background: #A8D5BA;">Home</span>
+                        <span class="status-available">Available</span>
+                    </div>
+                    <div class="food-items"><strong>Food:</strong> Homemade curry, bread (serves 8)</div>
+                    <div class="pickup-time"><strong>Pickup:</strong> 6:00 PM - 8:00 PM today</div>
+                    <button class="btn-secondary" onclick="selectDonationLocation(2)">Select for Route</button>
+                </div>
+                <button class="btn-primary" onclick="findDonationPath()" id="findPathBtn" disabled>Plan Route</button>
+            </div>
+        </div>
+        <div class="screen" id="navigationScreen">
+            <div class="header">
+                <button class="back-btn" onclick="goBack()">←</button>
+                <h1>Navigation</h1>
+                <p>Get directions to pickup locations</p>
+            </div>
+            <div class="content">
+                <div class="map-container" style="height: 400px;">
+                    <div id="navigationMap"></div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 15px; margin-top: 20px;">
+                    <h3 style="margin-bottom: 10px;">Route Details</h3>
+                    <p><strong>Start:</strong> <span id="routeStart">Your Location</span></p>
+                    <p><strong>Destinations:</strong> <span id="routeDestinations">Selected Donations</span></p>
+                    <p><strong>Total Distance:</strong> <span id="routeDistance">Calculating...</span></p>
+                    <button class="btn-primary" style="margin-top: 15px;" onclick="openInGoogleMaps()">Open in Google Maps</button>
+                </div>
+            </div>
+        </div>
+        <div class="screen" id="contributorTypeScreen">
+            <div class="header">
+                <button class="menu-btn" onclick="toggleMenu()">⋯</button>
+                <div class="menu-dropdown">
+                    <div class="menu-item" onclick="showScreen('userTypeScreen')"><span class="menu-item-icon">🏠</span><span>Home</span></div>
+                    <div class="menu-item" onclick="showScreen('profileScreen')"><span class="menu-item-icon">👤</span><span>Profile</span></div>
+                    <div class="menu-item" onclick="showScreen('foodMapScreen')"><span class="menu-item-icon">🗺️</span><span>Food Map</span></div>
+                    <div class="menu-item" onclick="showScreen('contributorTypeScreen')"><span class="menu-item-icon">➕</span><span>Add Donation</span></div>
+                    <div class="menu-item" onclick="showAbout()"><span class="menu-item-icon">ℹ️</span><span>About</span></div>
+                    <div class="menu-item" onclick="showSettings()"><span class="menu-item-icon">⚙️</span><span>Settings</span></div>
+                </div>
+                <h1>Contributor Type</h1>
+                <p>What type of contributor are you?</p>
+            </div>
+            <div class="content">
+                <div class="user-type-card" onclick="selectContributorType('restaurant')">
+                    <div class="card-icon">🍽️</div>
+                    <div class="card-title">Restaurant</div>
+                    <div class="card-description">Share surplus food from your restaurant</div>
+                </div>
+                <div class="user-type-card" onclick="selectContributorType('home')">
+                    <div class="card-icon">🏠</div>
+                    <div class="card-title">Individual (Home)</div>
+                    <div class="card-description">Share homemade food with the community</div>
+                </div>
+            </div>
+        </div>
+        <div class="screen" id="addFoodScreen">
+            <div class="header">
+                <button class="back-btn" onclick="goBack()">←</button>
+                <h1>Add Food Details</h1>
+                <p>Tell us about your food donation</p>
+            </div>
+            <div class="content">
+                <form id="foodForm">
+                    <div class="form-group">
+                        <label class="form-label">Food Items *</label>
+                        <textarea class="form-textarea" placeholder="List the food items (e.g., Rice, Dal, Vegetables, Roti)" required></textarea>
+                        <div class="error-message" id="foodItemsError" style="display: none; color: red;">Please describe the food items</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantity Estimate (Optional)</label>
+                        <input type="text" class="form-input" placeholder="e.g., Serves 10-15 people">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pickup Time Window *</label>
+                        <div class="time-picker">
+                            <select class="form-select" id="startTime" required>
+                                <option value="">Start Time</option>
+                                <option>12:00 PM</option>
+                                <option>1:00 PM</option>
+                                <option selected>2:00 PM</option>
+                                <option>3:00 PM</option>
+                                <option>4:00 PM</option>
+                                <option>5:00 PM</option>
+                                <option>6:00 PM</option>
+                                <option>7:00 PM</option>
+                                <option>8:00 PM</option>
+                            </select>
+                            <select class="form-select" id="endTime" required>
+                                <option value="">End Time</option>
+                                <option>2:00 PM</option>
+                                <option>3:00 PM</option>
+                                <option selected>4:00 PM</option>
+                                <option>5:00 PM</option>
+                                <option>6:00 PM</option>
+                                <option>7:00 PM</option>
+                                <option>8:00 PM</option>
+                                <option>9:00 PM</option>
+                                <option>10:00 PM</option>
+                            </select>
+                        </div>
+                        <div class="error-message" id="timeError" style="display: none; color: red;">Please select both start and end times</div>
+                    </div>
+                    <button type="button" class="btn-primary" onclick="validateFoodForm()">Continue to Location</button>
+                </form>
+            </div>
+        </div>
+        <div class="screen" id="locationScreen">
+            <div class="header">
+                <button class="back-btn" onclick="goBack()">←</button>
+                <h1>Share Location</h1>
+                <p>Click on the map to set pickup location</p>
+            </div>
+            <div class="content">
+                <div class="map-container">
+                    <div id="locationMap"></div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 15px; margin: 20px 0;">
+                    <h3 style="margin-bottom: 15px;">Selected Location</h3>
+                    <p><strong>Address:</strong> <span id="selectedAddress">Click map to select</span></p>
+                    <p><strong>Coordinates:</strong> <span id="selectedCoords">Not selected</span></p>
+                    <button class="btn-secondary" style="width: 100%; margin: 5px 0;" onclick="useCurrentLocation()">📍 Use Current GPS Location</button>
+                </div>
+                <button class="btn-primary" onclick="showConfirmationDialog()" id="submitDonationBtn" disabled>Submit Donation</button>
+            </div>
+        </div>
+        <div class="screen" id="successScreen">
+            <div class="header" style="background: #6FCF97;">
+                <h1>Donation Submitted!</h1>
+                <p>Your food is now visible to nearby NGOs</p>
+            </div>
+            <div class="content">
+                <div class="success-message">
+                    <div class="success-icon">✅</div>
+                    <h3>Thank you for your generosity!</h3>
+                    <p style="margin-top: 10px;">NGOs in your area can now see and respond to your donation.</p>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 15px; margin: 20px 0;">
+                    <h3 style="margin-bottom: 15px;">What happens next?</h3>
+                    <p style="font-size: 14px; line-height: 1.5; color: #666;">
+                        • NGOs will see your donation on the map<br>
+                        • They will contact you for pickup coordination<br>
+                        • You'll receive notifications about pickup status
+                    </p>
+                </div>
+                <button class="btn-primary" onclick="showScreen('userTypeScreen')">Make Another Donation</button>
+                <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="showScreen('userTypeScreen')">Return to Home</button>
+            </div>
+        </div>
+        <div class="screen" id="loadingScreen">
+            <div class="header">
+                <h1>Processing</h1>
+                <p>Please wait while we submit your donation</p>
+            </div>
+            <div class="content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 400px;">
+                <div class="spinner" style="width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite;"></div>
+                <p style="margin-top: 20px;">Submitting your donation...</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        // App state
+        let currentScreen = 'userTypeScreen';
+        let screenHistory = [];
+        let userType = null;
+        let contributorType = null;
+        let donationData = {};
+        let locationMap, foodMap, navigationMap;
+        let directionsService, directionsRenderer;
+        let selectedDonationLocations = [];
+        let userLocation = null;
+        let isRouting = false;
+
+        // Donation data (simulated backend)
+        const donations = [
+            { id: 1, name: "Sunset Restaurant", lat: 12.9719, lng: 77.6412, type: "Restaurant", food: "15 portions rice, dal, vegetables", pickup: "2:00 PM - 4:00 PM", status: "Available" },
+            { id: 2, name: "Home Kitchen", lat: 12.9279, lng: 77.6271, type: "Home", food: "Homemade curry, bread (serves 8)", pickup: "6:00 PM - 8:00 PM", status: "Available" }
+        ];
+
+        // Default map center (Bangalore)
+        const bangaloreCenter = { lat: 12.9716, lng: 77.5946 };
+
+        // Google Maps initialization
+        function initGlobalMap() {
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: false });
+        }
+
+        // DOM elements
+        const confirmationDialog = document.getElementById('confirmationDialog');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const submitDonationBtn = document.getElementById('submitDonationBtn');
+        const findPathBtn = document.getElementById('findPathBtn');
+
+        // Debounce utility to prevent multiple rapid clicks
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            cancelBtn.addEventListener('click', hideConfirmationDialog);
+            confirmBtn.addEventListener('click', submitDonation);
+            setupFormValidation();
+            document.querySelectorAll('.user-type-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('.user-type-card').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            document.addEventListener('click', function(event) {
+                const menuBtn = event.target.closest('.menu-btn');
+                const menuDropdown = event.target.closest('.menu-dropdown');
+                if (!menuBtn && !menuDropdown) {
+                    closeMenu();
+                }
+            });
+            findPathBtn.addEventListener('click', debounce(findDonationPath, 500));
+            // Add event listener for location input
+            const ngoLocationInput = document.getElementById('ngoLocationInput');
+            if (ngoLocationInput) {
+                ngoLocationInput.addEventListener('change', updateNgoLocation);
+            }
+            // Initially disable Plan Route button
+            findPathBtn.disabled = true;
+        });
+
+        // Navigation functions
+        function showScreen(screenId) {
+            closeMenu();
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if (currentScreen !== screenId) {
+                screenHistory.push(currentScreen);
+            }
+            currentScreen = screenId;
+
+            if (screenId === 'locationScreen') {
+                initLocationMap();
+            } else if (screenId === 'foodMapScreen') {
+                initFoodMap();
+            } else if (screenId === 'navigationScreen') {
+                initNavigationMap();
+            }
+        }
+
+        function goBack() {
+            if (screenHistory.length > 0) {
+                const previousScreen = screenHistory.pop();
+                showScreen(previousScreen);
+            }
+        }
+
+        // User type selection
+        function selectUserType(type) {
+            userType = type;
+            closeMenu();
+            if (type === 'ngo') {
+                showScreen('ngoInfoScreen');
+            } else {
+                showScreen('contributorTypeScreen');
+            }
+        }
+
+        function selectContributorType(type) {
+            contributorType = type;
+            closeMenu();
+            showScreen('addFoodScreen');
+        }
+
+        // Form handling
+        function setupFormValidation() {
+            const foodForm = document.getElementById('foodForm');
+            if (!foodForm) return;
+            const foodTextarea = foodForm.querySelector('.form-textarea');
+            const startTimeSelect = document.getElementById('startTime');
+            const endTimeSelect = document.getElementById('endTime');
+
+            foodTextarea.addEventListener('input', function() {
+                if (this.value.trim()) {
+                    document.getElementById('foodItemsError').style.display = 'none';
+                }
+            });
+
+            startTimeSelect.addEventListener('change', function() {
+                if (this.value && endTimeSelect.value) {
+                    document.getElementById('timeError').style.display = 'none';
+                }
+            });
+
+            endTimeSelect.addEventListener('change', function() {
+                if (this.value && startTimeSelect.value) {
+                    document.getElementById('timeError').style.display = 'none';
+                }
+            });
+        }
+
+        function validateFoodForm() {
+            const foodForm = document.getElementById('foodForm');
+            const foodItems = foodForm.querySelector('.form-textarea').value.trim();
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            let isValid = true;
+
+            if (!foodItems) {
+                document.getElementById('foodItemsError').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('foodItemsError').style.display = 'none';
+            }
+
+            if (!startTime || !endTime) {
+                document.getElementById('timeError').style.display = 'block';
+                isValid = false;
+            } else {
+                const start = new Date(`1970-01-01 ${startTime}`);
+                const end = new Date(`1970-01-01 ${endTime}`);
+                if (end <= start) {
+                    document.getElementById('timeError').textContent = 'End time must be after start time';
+                    document.getElementById('timeError').style.display = 'block';
+                    isValid = false;
+                } else {
+                    document.getElementById('timeError').style.display = 'none';
+                }
+            }
+
+            if (isValid) {
+                donationData = {
+                    foodItems,
+                    quantity: foodForm.querySelector('.form-input').value,
+                    pickupWindow: `${startTime} - ${endTime}`,
+                    contributorType
+                };
+                showScreen('locationScreen');
+            }
+        }
+
+        // Map initialization for Share Location Screen
+        function initLocationMap() {
+            locationMap = new google.maps.Map(document.getElementById('locationMap'), {
+                center: bangaloreCenter,
+                zoom: 12,
+            });
+
+            const geocoder = new google.maps.Geocoder();
+            let marker = null;
+
+            locationMap.addListener('click', function(event) {
+                const latLng = event.latLng;
+                donationData.location = { lat: latLng.lat(), lng: latLng.lng() };
+
+                if (marker) marker.setMap(null);
+                marker = new google.maps.Marker({
+                    position: latLng,
+                    map: locationMap,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: '#F6C453',
+                        fillOpacity: 1,
+                        strokeColor: '#FFFFFF',
+                        strokeWeight: 2
+                    }
+                });
+
+                geocoder.geocode({ location: latLng }, (results, status) => {
+                    if (status === google.maps.GeocoderStatus.OK && results[0]) {
+                        document.getElementById('selectedAddress').textContent = results[0].formatted_address;
+                        document.getElementById('selectedCoords').textContent = `${latLng.lat().toFixed(4)}, ${latLng.lng().toFixed(4)}`;
+                        submitDonationBtn.disabled = false;
+                    } else {
+                        document.getElementById('selectedAddress').textContent = 'Unknown address';
+                    }
+                });
+            });
+
+            useCurrentLocation();
+        }
+
+        function useCurrentLocation() {
+            if (!navigator.geolocation) {
+                console.error('Geolocation not supported by this browser.');
+                alert('Geolocation is not supported by your browser. Please click on the map to select a location.');
+                document.getElementById('selectedAddress').textContent = 'Geolocation not supported';
+                locationMap.setCenter(bangaloreCenter);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const latLng = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    donationData.location = latLng;
+                    locationMap.setCenter(latLng);
+                    const marker = new google.maps.Marker({
+                        position: latLng,
+                        map: locationMap,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 10,
+                            fillColor: '#F6C453',
+                            fillOpacity: 1,
+                            strokeColor: '#FFFFFF',
+                            strokeWeight: 2
+                        }
+                    });
+                    const geocoder = new google.maps.Geocoder();
+                    geocoder.geocode({ location: latLng }, (results, status) => {
+                        if (status === google.maps.GeocoderStatus.OK && results[0]) {
+                            document.getElementById('selectedAddress').textContent = results[0].formatted_address;
+                            document.getElementById('selectedCoords').textContent = `${latLng.lat().toFixed(4)}, ${latLng.lng().toFixed(4)}`;
+                            submitDonationBtn.disabled = false;
+                        } else {
+                            document.getElementById('selectedAddress').textContent = 'Unable to resolve address';
+                        }
+                    });
+                },
+                error => {
+                    let errorMessage = 'Unable to get current location';
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location access denied. Please enable location services or click on the map to select a location.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location unavailable. Please check your connection or select a location on the map.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location request timed out. Please try again or select a location on the map.';
+                            break;
+                        default:
+                            errorMessage = 'An error occurred while accessing location. Please select a location on the map.';
+                            break;
+                    }
+                    console.error(`Geolocation error: ${error.message} (Code: ${error.code})`);
+                    alert(errorMessage);
+                    document.getElementById('selectedAddress').textContent = errorMessage;
+                    locationMap.setCenter(bangaloreCenter);
+                },
+                { timeout: 10000, enableHighAccuracy: true }
+            );
+        }
+
+        // Map initialization for Food Map Screen
+        function initFoodMap() {
+            foodMap = new google.maps.Map(document.getElementById('foodMap'), {
+                center: userLocation || bangaloreCenter,
+                zoom: 12,
+            });
+            directionsRenderer.setMap(null);
+            directionsRenderer.setMap(foodMap);
+
+            donations.forEach(donation => {
+                const marker = new google.maps.Marker({
+                    position: { lat: donation.lat, lng: donation.lng },
+                    map: foodMap,
+                    title: donation.name,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: donation.type === 'Restaurant' ? '#F6C453' : '#A8D5BA',
+                        fillOpacity: 1,
+                        strokeColor: '#FFFFFF',
+                        strokeWeight: 2
+                    }
+                });
+                marker.addListener('click', () => selectDonationLocation(donation.id));
+            });
+
+            // Try to set user location automatically when map loads
+            useCurrentNgoLocation();
+        }
+
+        // Function to handle manual location input
+        function updateNgoLocation() {
+            const ngoLocationInput = document.getElementById('ngoLocationInput').value.trim();
+            if (!ngoLocationInput) {
+                alert('Please enter a valid location.');
+                userLocation = null;
+                updateFindPathButtonState();
+                return;
+            }
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: ngoLocationInput }, (results, status) => {
+                if (status === google.maps.GeocoderStatus.OK && results[0]) {
+                    const latLng = {
+                        lat: results[0].geometry.location.lat(),
+                        lng: results[0].geometry.location.lng()
+                    };
+                    userLocation = {
+                        name: ngoLocationInput,
+                        lat: latLng.lat,
+                        lng: latLng.lng
+                    };
+                    foodMap.setCenter(latLng);
+                    new google.maps.Marker({
+                        position: latLng,
+                        map: foodMap,
+                        title: 'Your Location',
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 10,
+                            fillColor: '#6FCF97',
+                            fillOpacity: 1,
+                            strokeColor: '#FFFFFF',
+                            strokeWeight: 2
+                        }
+                    });
+                    updateFindPathButtonState();
+                } else {
+                    alert('Could not find location: ' + ngoLocationInput);
+                    document.getElementById('ngoLocationInput').value = '';
+                    userLocation = null;
+                    foodMap.setCenter(bangaloreCenter);
+                    updateFindPathButtonState();
+                }
+            });
+        }
+
+        // Function to use current GPS location for NGO
+        function useCurrentNgoLocation() {
+            if (!navigator.geolocation) {
+                console.error('Geolocation not supported by this browser.');
+                alert('Geolocation is not supported by your browser. Please enter a location manually.');
+                document.getElementById('ngoLocationInput').value = 'Geolocation not supported';
+                userLocation = null;
+                foodMap.setCenter(bangaloreCenter);
+                updateFindPathButtonState();
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const latLng = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    userLocation = {
+                        name: 'Current Location',
+                        lat: latLng.lat,
+                        lng: latLng.lng
+                    };
+                    foodMap.setCenter(latLng);
+                    new google.maps.Marker({
+                        position: latLng,
+                        map: foodMap,
+                        title: 'Your Location',
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 10,
+                            fillColor: '#6FCF97',
+                            fillOpacity: 1,
+                            strokeColor: '#FFFFFF',
+                            strokeWeight: 2
+                        }
+                    });
+                    const geocoder = new google.maps.Geocoder();
+                    geocoder.geocode({ location: latLng }, (results, status) => {
+                        if (status === google.maps.GeocoderStatus.OK && results[0]) {
+                            document.getElementById('ngoLocationInput').value = results[0].formatted_address;
+                        } else {
+                            document.getElementById('ngoLocationInput').value = 'Unable to resolve address';
+                        }
+                    });
+                    updateFindPathButtonState();
+                },
+                error => {
+                    let errorMessage = 'Unable to get current location';
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location access denied. Please enable location services or enter a location manually.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location unavailable. Please check your connection or enter a location manually.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location request timed out. Please try again or enter a location manually.';
+                            break;
+                        default:
+                            errorMessage = 'An error occurred while accessing location. Please enter a location manually.';
+                            break;
+                    }
+                    console.error(`Geolocation error: ${error.message} (Code: ${error.code})`);
+                    alert(errorMessage);
+                    document.getElementById('ngoLocationInput').value = errorMessage;
+                    userLocation = null;
+                    foodMap.setCenter(bangaloreCenter);
+                    updateFindPathButtonState();
+                },
+                { timeout: 10000, enableHighAccuracy: true }
+            );
+        }
+
+        // Update the state of the Plan Route button
+        function updateFindPathButtonState() {
+            findPathBtn.disabled = !(userLocation && selectedDonationLocations.length >= 1);
+        }
+
+        // Map initialization for Navigation Screen
+        function initNavigationMap() {
+            if (!navigationMap) {
+                navigationMap = new google.maps.Map(document.getElementById('navigationMap'), {
+                    center: userLocation || bangaloreCenter,
+                    zoom: 12,
+                });
+            }
+            directionsRenderer.setMap(null);
+            directionsRenderer.setMap(navigationMap);
+            if (userLocation && selectedDonationLocations.length >= 1 && !isRouting) {
+                findDonationPath();
+            }
+        }
+
+        // Donation selection for route planning
+        function selectDonationLocation(id) {
+            const donation = donations.find(d => d.id === id);
+            if (!selectedDonationLocations.includes(donation)) {
+                selectedDonationLocations.push(donation);
+                alert(`Added ${donation.name} to the route.`);
+                document.querySelector(`.location-card[data-id="${id}"] button`).textContent = 'Remove from Route';
+            } else {
+                selectedDonationLocations = selectedDonationLocations.filter(d => d.id !== id);
+                alert(`Removed ${donation.name} from the route.`);
+                document.querySelector(`.location-card[data-id="${id}"] button`).textContent = 'Select for Route';
+            }
+            updateFindPathButtonState();
+        }
+
+        // Route planning
+        async function findDonationPath() {
+            if (isRouting) return;
+            if (!userLocation) {
+                alert('Please enter or select your location to plan the route.');
+                return;
+            }
+            if (selectedDonationLocations.length < 1) {
+                alert('Please select at least one donation location.');
+                return;
+            }
+
+            isRouting = true;
+            findPathBtn.disabled = true;
+
+            const startLocation = userLocation;
+            const locations = [startLocation, ...selectedDonationLocations, startLocation];
+
+            try {
+                const optimizedRoute = await findShortestPath(locations);
+                const waypoints = optimizedRoute.slice(1, -1).map(location => ({
+                    location: new google.maps.LatLng(location.lat, location.lng),
+                    stopover: true
+                }));
+
+                const request = {
+                    origin: { lat: optimizedRoute[0].lat, lng: optimizedRoute[0].lng },
+                    destination: { lat: optimizedRoute[optimizedRoute.length - 1].lat, lng: optimizedRoute[optimizedRoute.length - 1].lng },
+                    waypoints: waypoints,
+                    optimizeWaypoints: true,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                };
+
+                directionsService.route(request, (result, status) => {
+                    if (status === google.maps.DirectionsStatus.OK) {
+                        directionsRenderer.setDirections(result);
+                        const totalDistance = result.routes[0].legs.reduce((total, leg) => total + leg.distance.value, 0) / 1000;
+                        document.getElementById('routeStart').textContent = startLocation.name;
+                        document.getElementById('routeDestinations').textContent = selectedDonationLocations.map(d => d.name).join(', ');
+                        document.getElementById('routeDistance').textContent = `${totalDistance.toFixed(2)} km`;
+                        showScreen('navigationScreen');
+                    } else {
+                        alert('Could not find a path: ' + status);
+                    }
+                    isRouting = false;
+                    updateFindPathButtonState();
+                });
+            } catch (error) {
+                alert('Error planning route: ' + error);
+                isRouting = false;
+                updateFindPathButtonState();
+            }
+        }
+
+        async function findShortestPath(locations) {
+            const n = locations.length;
+            const distanceMatrix = await getDistanceMatrix(locations);
+            const startIndex = 0;
+            const permutations = getPermutations(Array.from({length: n - 2}, (_, i) => i + 1));
+
+            let shortestDistance = Infinity;
+            let shortestPath = [];
+
+            for (let perm of permutations) {
+                let distance = 0;
+                let fullPath = [startIndex, ...perm, startIndex];
+                for (let i = 0; i < fullPath.length - 1; i++) {
+                    distance += distanceMatrix[fullPath[i]][fullPath[i + 1]];
+                }
+                if (distance < shortestDistance) {
+                    shortestDistance = distance;
+                    shortestPath = fullPath;
+                }
+            }
+
+            return shortestPath.map(index => locations[index]);
+        }
+
+        function getPermutations(arr) {
+            if (arr.length <= 2) return arr.length === 2 ? [arr, [arr[1], arr[0]]] : [arr];
+            return arr.reduce((acc, item, i) =>
+                acc.concat(getPermutations([...arr.slice(0, i), ...arr.slice(i + 1)]).map(val => [item, ...val])),
+            []);
+        }
+
+        function getDistanceMatrix(locations) {
+            return new Promise((resolve, reject) => {
+                const service = new google.maps.DistanceMatrixService();
+                service.getDistanceMatrix(
+                    {
+                        origins: locations,
+                        destinations: locations,
+                        travelMode: google.maps.TravelMode.DRIVING,
+                    },
+                    (response, status) => {
+                        if (status === google.maps.DistanceMatrixStatus.OK) {
+                            const distances = response.rows.map(row => row.elements.map(element => element.distance.value));
+                            resolve(distances);
+                        } else {
+                            reject('Distance Matrix Error: ' + status);
+                        }
+                    }
+                );
+            });
+        }
+
+        function openInGoogleMaps() {
+            if (!userLocation) {
+                alert('Please set your location before opening in Google Maps.');
+                return;
+            }
+            const waypoints = selectedDonationLocations.map(d => `${d.lat},${d.lng}`).join('|');
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${userLocation.lat},${userLocation.lng}&waypoints=${waypoints}&travelmode=driving`;
+            window.open(url, '_blank');
+        }
+
+        // Donation submission
+        function showConfirmationDialog() {
+            if (!donationData.location) {
+                alert('Please select a location on the map.');
+                return;
+            }
+            confirmationDialog.style.display = 'flex';
+        }
+
+        function hideConfirmationDialog() {
+            confirmationDialog.style.display = 'none';
+        }
+
+        function submitDonation() {
+            hideConfirmationDialog();
+            showScreen('loadingScreen');
+            donationData.id = donations.length + 1;
+            donationData.name = donationData.contributorType === 'restaurant' ? 'Restaurant Donation' : 'Home Donation';
+            donationData.status = 'Available';
+            donations.push(donationData);
+            setTimeout(() => {
+                showScreen('successScreen');
+                console.log('Donation submitted:', donationData);
+                donationData = {};
+                submitDonationBtn.disabled = true;
+            }, 2000);
+        }
+
+        // Menu functions
+        function toggleMenu() {
+            const currentScreenElement = document.querySelector('.screen.active');
+            const currentMenu = currentScreenElement.querySelector('.menu-dropdown');
+            const menuOverlay = document.getElementById('menuOverlay');
+            const isActive = currentMenu.classList.contains('active');
+
+            document.querySelectorAll('.menu-dropdown').forEach(menu => menu.classList.remove('active'));
+            if (!isActive) {
+                currentMenu.classList.add('active');
+                menuOverlay.classList.add('active');
+            } else {
+                menuOverlay.classList.remove('active');
+            }
+        }
+
+        function closeMenu() {
+            document.querySelectorAll('.menu-dropdown').forEach(menu => menu.classList.remove('active'));
+            document.getElementById('menuOverlay').classList.remove('active');
+        }
+
+        function showAbout() {
+            closeMenu();
+            alert('Food Bridge v1.0\n\nConnecting communities through food sharing.\n\nDeveloped to reduce food waste and help those in need.');
+        }
+
+        function showSettings() {
+            closeMenu();
+            alert('Settings\n\n• Notifications: On\n• Location Services: Enabled\n• Language: English\n• Privacy Settings: Manage');
+        }
+    </script>
+</body>
+</html>
