@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Bridge - Login</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyARIYwEnWuP7DtugSxmOg-RijAftj4x7jM",
+            authDomain: "loginfb-f2c91.firebaseapp.com",
+            projectId: "loginfb-f2c91",
+            storageBucket: "loginfb-f2c91.firebasestorage.app",
+            messagingSenderId: "943210512803",
+            appId: "1:943210512803:web:651bb8bfac5688662d9a16",
+            measurementId: "G-GHJ2FCF9BK"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Handle login with email and password
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (email && password) {
+                signInWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        const user = userCredential.user;
+                        alert('Logged in successfully');
+                        // Redirect to the new page after successful login
+                        window.location.href = 'welcome.html'; // Redirect to a welcome page or dashboard
+                    })
+                    .catch((error) => {
+                        const errorMessage = error.message;
+                        alert(`Error: ${errorMessage}`);
+                    });
+            } else {
+                alert('Please enter both email and password');
+            }
+        });
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="phone-container">
+        <div class="screen active" id="loginScreen">
+            <div class="header">
+                <h1>Food Bridge</h1>
+                <p>Connecting communities through food sharing</p>
+            </div>
+            <div class="content">
+                <div class="form-container">
+                    <h2>Login to your account</h2>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label class="form-label" for="email">Email</label>
+                            <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="password">Password</label>
+                            <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Login</button>
+                    </form>
+                    <p style="text-align: center; margin-top: 15px;">
+                        <a href="register.html" style="color: #6FCF97; text-decoration: none;">Don't have an account? Sign up</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="scripts.js"></script>
+</body>
+</html>
